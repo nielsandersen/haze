@@ -19,7 +19,7 @@
 
 namespace {
 
-const char *version = "0.1.0";
+const char *version = "0.1.1";
 
 const char *usage = "Usage: haze [command]\n"
                     "\n"
