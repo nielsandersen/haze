@@ -159,10 +159,14 @@ void Hyprland::applyWindow(const QByteArray &reply) {
         && !window.value("hidden").toBool(false))
         rect = QRectF(at[0].toDouble(), at[1].toDouble(), size[0].toDouble(), size[1].toDouble());
     const int monitor = rect.isValid() ? window.value("monitor").toInt(-1) : -1;
-    if (rect == m_window && monitor == m_windowMonitor)
+    QStringList tags;
+    for (const QJsonValue &tag : window.value("tags").toArray())
+        tags << tag.toString();
+    if (rect == m_window && monitor == m_windowMonitor && tags == m_windowTags)
         return;
     m_window = rect;
     m_windowMonitor = monitor;
+    m_windowTags = tags;
     emit changed();
 }
 
@@ -192,7 +196,44 @@ void Hyprland::refreshMonitors() {
     });
 }
 
+// The focused window with its title bar, when it has one. Hyprland reports a
+// window without the bar the hyprbars plugin draws above it, so a hole the
+// size of the window alone would leave the haze over the title bar.
+QRectF Hyprland::framedWindow() const {
+    QRectF window = m_window;
+    // A tag set by a rule is listed with a star after it.
+    const bool tagged = m_titlebarTag.isEmpty() || m_windowTags.contains(m_titlebarTag)
+                        || m_windowTags.contains(m_titlebarTag + "*");
+    if (window.isValid() && m_titlebars && m_titlebarHeight > 0 && tagged)
+        window.setTop(window.top() - m_titlebarHeight);
+    return window;
+}
+
 void Hyprland::refreshOptions() {
+    // Without the plugin Hyprland knows no such options, and the answers are
+    // not JSON: then there are no title bars.
+    request("j/getoption plugin:hyprbars:enabled", [this](const QByteArray &reply) {
+        const QJsonObject object = QJsonDocument::fromJson(reply).object();
+        const bool enabled = object.value("bool").toBool(object.value("int").toInt() != 0);
+        if (enabled == m_titlebars)
+            return;
+        m_titlebars = enabled;
+        emit changed();
+    });
+    request("j/getoption plugin:hyprbars:bar_height", [this](const QByteArray &reply) {
+        const int height = QJsonDocument::fromJson(reply).object().value("int").toInt();
+        if (height == m_titlebarHeight)
+            return;
+        m_titlebarHeight = height;
+        emit changed();
+    });
+    request("j/getoption plugin:hyprbars:workspace_tag", [this](const QByteArray &reply) {
+        const QString tag = QJsonDocument::fromJson(reply).object().value("str").toString();
+        if (tag == m_titlebarTag)
+            return;
+        m_titlebarTag = tag;
+        emit changed();
+    });
     // A Hyprland that takes Lua answers "ok"; no answer at all says nothing
     // either way.
     request("/eval haze_asked = true", [this](const QByteArray &reply) {
@@ -219,7 +260,7 @@ QVariantMap Hyprland::holes() const {
         return holes;
     for (const Monitor &monitor : m_monitors)
         if (monitor.id == m_windowMonitor)
-            holes.insert(monitor.name, m_window.translated(-monitor.origin));
+            holes.insert(monitor.name, framedWindow().translated(-monitor.origin));
     return holes;
 }
 

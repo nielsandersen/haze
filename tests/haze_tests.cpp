@@ -371,6 +371,36 @@ private slots:
         QVERIFY(hyprland.holes().isEmpty());
     }
 
+    void theHoleTakesInATitleBar() {
+        // The hyprbars plugin draws a title bar above a window, outside the
+        // size Hyprland reports; Omarchy gives one to the windows it tags on
+        // a floating workspace.
+        FakeHyprland fake;
+        fake.setMonitors(R"([{"id": 0, "name": "DP-1", "x": 0, "y": 0, "reserved": [0, 0, 0, 0]}])");
+        fake.replies.insert("j/getoption plugin:hyprbars:enabled", R"({"option": "plugin:hyprbars:enabled", "bool": true, "set": true})");
+        fake.replies.insert("j/getoption plugin:hyprbars:bar_height", R"({"option": "plugin:hyprbars:bar_height", "int": 30, "set": true})");
+        fake.replies.insert("j/getoption plugin:hyprbars:workspace_tag", R"({"option": "plugin:hyprbars:workspace_tag", "str": "floating", "set": true})");
+        fake.replies.insert("j/activewindow", R"({"at": [100, 200], "size": [800, 600], "monitor": 0, "tags": ["terminal*", "floating"]})");
+
+        Hyprland hyprland(fake.requestSocket(), fake.eventSocket());
+        QTRY_COMPARE(hyprland.holes().value("DP-1").toRectF(), QRectF(100, 170, 800, 630));
+
+        // A window without the tag has no title bar.
+        QTRY_VERIFY(fake.listener);
+        fake.replies.insert("j/activewindow", R"({"at": [100, 200], "size": [800, 600], "monitor": 0, "tags": ["terminal*"]})");
+        fake.announce("activewindowv2>>55d4");
+        QTRY_COMPARE(hyprland.holes().value("DP-1").toRectF(), QRectF(100, 200, 800, 600));
+
+        // With no tag asked for, every window has one; with the plugin
+        // gone, none does.
+        fake.replies.insert("j/getoption plugin:hyprbars:workspace_tag", R"({"option": "plugin:hyprbars:workspace_tag", "str": "", "set": true})");
+        fake.announce("configreloaded>>");
+        QTRY_COMPARE(hyprland.holes().value("DP-1").toRectF(), QRectF(100, 170, 800, 630));
+        fake.replies.insert("j/getoption plugin:hyprbars:enabled", "no such option");
+        fake.announce("configreloaded>>");
+        QTRY_COMPARE(hyprland.holes().value("DP-1").toRectF(), QRectF(100, 200, 800, 600));
+    }
+
     void hyprlandFollowsAWindowBeingDragged() {
         // Hyprland announces nothing while the mouse moves a window, so a
         // watched Hyprland asks again by itself.

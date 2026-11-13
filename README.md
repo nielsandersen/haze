@@ -41,6 +41,7 @@ Good to know:
 
 - Hyprland has one blur for the whole desktop. While the haze is on, Haze switches that blur on and, unless you pick the desktop's own, sets its strength, vibrancy, and grain, so other see-through windows and panels are blurred the same way. Turning the haze off, or quitting, gives the desktop its settings back. Haze never writes to your Hyprland or Omarchy config.
 - A menu or popup that reaches outside the focused window is under the haze where it does, and so is the dock.
+- On a floating workspace the clear area takes in the window's title bar. An app that draws its own frame there (a browser) has no title bar, and gets a thin clear strip above it instead.
 - A fullscreen window has no haze around it to show.
 - Settings are kept in `~/.config/haze/settings.json`.
 

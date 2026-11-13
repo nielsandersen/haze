@@ -77,6 +77,7 @@ private:
     void refreshMonitors();
     void refreshOptions();
     void applyWindow(const QByteArray &reply);
+    QRectF framedWindow() const;
 
     QString m_requests;
     QLocalSocket m_events;
@@ -87,6 +88,13 @@ private:
 
     QList<Monitor> m_monitors;
     QRectF m_window;
+    QStringList m_windowTags;
+    // Title bars from the hyprbars plugin, which Omarchy puts on the windows
+    // of a floating workspace: how tall, and the tag a window must carry to
+    // get one (none means every window does).
+    bool m_titlebars = false;
+    int m_titlebarHeight = 0;
+    QString m_titlebarTag;
     int m_windowMonitor = -1;
     int m_borderSize = 0;
     bool m_scriptable = true;
