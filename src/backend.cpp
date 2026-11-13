@@ -11,12 +11,17 @@
 
 #include "hyprland.h"
 
-Backend::Backend(Hyprland *hyprland, const QString &settingsFile, QObject *parent)
+Backend::Backend(Hyprland *hyprland, const QString &settingsFile, QObject *parent, const QString &autostartFile)
     : QObject(parent), m_hyprland(hyprland),
       m_settingsFile(settingsFile.isEmpty()
                          ? QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
                                + "/haze/settings.json"
-                         : settingsFile) {
+                         : settingsFile),
+      m_autostartFile(!autostartFile.isEmpty() ? autostartFile
+                      : settingsFile.isEmpty()
+                          ? QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
+                                + "/autostart/haze.desktop"
+                          : QFileInfo(settingsFile).absolutePath() + "/autostart/haze.desktop") {
     // A slider being dragged changes a setting many times a second; it is
     // written, and passed to Hyprland, once it rests.
     m_saveLater.setSingleShot(true);
@@ -199,4 +204,27 @@ void Backend::shutdown() {
     save();
     if (m_hyprland)
         m_hyprland->evalNow(restoreLua());
+}
+
+bool Backend::startAtLogin() const {
+    return QFileInfo::exists(m_autostartFile);
+}
+
+void Backend::setStartAtLogin(bool start) {
+    if (start == startAtLogin() && !m_startAtLoginFailed)
+        return;
+    bool done;
+    if (start) {
+        // `haze start` brings the haze back as it was left, on or off, with
+        // no window.
+        QSaveFile file(m_autostartFile);
+        file.setDirectWriteFallback(false);
+        done = QDir().mkpath(QFileInfo(m_autostartFile).absolutePath()) && file.open(QIODevice::WriteOnly)
+               && file.write("[Desktop Entry]\nType=Application\nName=Haze\nExec=haze start\nIcon=haze\n") > 0
+               && file.commit();
+    } else {
+        done = !QFileInfo::exists(m_autostartFile) || QFile::remove(m_autostartFile);
+    }
+    m_startAtLoginFailed = !done;
+    emit changed();
 }

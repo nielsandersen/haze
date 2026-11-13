@@ -20,10 +20,15 @@ class Backend : public QObject {
     Q_PROPERTY(double vibrancy READ vibrancy WRITE setVibrancy NOTIFY changed)
     Q_PROPERTY(double grain READ grain WRITE setGrain NOTIFY changed)
     Q_PROPERTY(QStringList tints READ tints CONSTANT)
+    Q_PROPERTY(bool startAtLogin READ startAtLogin WRITE setStartAtLogin NOTIFY changed)
+    Q_PROPERTY(bool startAtLoginFailed READ startAtLoginFailed NOTIFY changed)
 
 public:
     // Tests pass a temp settings file; without Hyprland only the settings work.
-    explicit Backend(Hyprland *hyprland = nullptr, const QString &settingsFile = {}, QObject *parent = nullptr);
+    // Given a settings file and no autostart file, the autostart file is kept
+    // beside it, never in the real ~/.config/autostart.
+    explicit Backend(Hyprland *hyprland = nullptr, const QString &settingsFile = {}, QObject *parent = nullptr,
+                     const QString &autostartFile = {});
     ~Backend() override;
 
     bool enabled() const { return m_enabled; }
@@ -44,6 +49,12 @@ public:
     void setStrength(int strength);
     void setVibrancy(double vibrancy);
     void setGrain(double grain);
+
+    // Starting at login is an entry in ~/.config/autostart, which the session
+    // runs: there or not is the whole setting.
+    bool startAtLogin() const;
+    bool startAtLoginFailed() const { return m_startAtLoginFailed; }
+    void setStartAtLogin(bool start);
 
     Q_INVOKABLE void toggle() { setEnabled(!m_enabled); }
     Q_INVOKABLE void nextTint();
@@ -71,6 +82,8 @@ private:
 
     Hyprland *m_hyprland;
     QString m_settingsFile;
+    QString m_autostartFile;
+    bool m_startAtLoginFailed = false;
     QTimer m_saveLater;
     QTimer m_syncLater;
 

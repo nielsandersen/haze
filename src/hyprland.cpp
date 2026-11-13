@@ -193,6 +193,17 @@ void Hyprland::refreshMonitors() {
 }
 
 void Hyprland::refreshOptions() {
+    // A Hyprland that takes Lua answers "ok"; no answer at all says nothing
+    // either way.
+    request("/eval haze_asked = true", [this](const QByteArray &reply) {
+        if (reply.trimmed().isEmpty())
+            return;
+        const bool scriptable = reply.trimmed() == "ok";
+        if (scriptable == m_scriptable)
+            return;
+        m_scriptable = scriptable;
+        emit changed();
+    });
     request("j/getoption general:border_size", [this](const QByteArray &reply) {
         const QJsonValue value = QJsonDocument::fromJson(reply).object().value("int");
         if (!value.isDouble() || value.toInt() == m_borderSize)

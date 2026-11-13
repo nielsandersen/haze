@@ -24,6 +24,7 @@ const char *version = "0.1.0";
 const char *usage = "Usage: haze [command]\n"
                     "\n"
                     "  open      Show the settings window (the default)\n"
+                    "  start     Start Haze without a window, as it was left (for login)\n"
                     "  on        Turn the haze on, starting Haze if needed\n"
                     "  off       Turn the haze off\n"
                     "  toggle    Turn the haze on or off\n"
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]) {
         out << "haze " << version << "\n";
         return 0;
     }
-    if (!QStringList{"open", "on", "off", "toggle", "quit"}.contains(command)) {
+    if (!QStringList{"open", "start", "on", "off", "toggle", "quit"}.contains(command)) {
         err << "haze: unknown command '" << command << "'\n\n" << usage;
         return 1;
     }

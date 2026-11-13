@@ -24,13 +24,14 @@ From a terminal, a key binding, or your autostart:
 
 ```text
 haze          Show the settings window
+haze start    Start Haze without a window, as it was left
 haze on       Turn the haze on, starting Haze if needed
 haze off      Turn the haze off
 haze toggle   Turn the haze on or off
 haze quit     Turn the haze off and stop Haze
 ```
 
-To have the haze from login, add `haze on` to your Hyprland autostart. To toggle it from the keyboard, bind a key to `haze toggle`.
+To have Haze from login, turn on *Start at login* in its window. To toggle it from the keyboard, bind a key to `haze toggle`.
 
 ## How it works
 
@@ -43,6 +44,18 @@ Good to know:
 - A fullscreen window has no haze around it to show.
 - Settings are kept in `~/.config/haze/settings.json`.
 
+## Install
+
+Haze is for [Omarchy](https://omarchy.org) and other Arch desktops running Hyprland. Until it is packaged, build it and install it for your user:
+
+```bash
+sudo pacman -S --needed base-devel cmake qt6-base qt6-declarative qt6-svg qt6-wayland layer-shell-qt
+git clone https://github.com/nielsandersen/haze && cd haze
+bin/build && cmake --install build --prefix ~/.local
+```
+
+That puts Haze in the app launcher. `xargs rm < build/install_manifest.txt` removes it again.
+
 ## Build
 
 ```bash
@@ -51,7 +64,7 @@ bin/test                                  # builds, then runs the tests offscree
 cmake --install build --prefix ~/.local   # puts Haze in the app launcher
 ```
 
-It needs Qt 6 (base, declarative, svg, wayland), `layer-shell-qt`, and Hyprland.
+It needs Qt 6 (base, declarative, svg, wayland), `layer-shell-qt`, and a Hyprland that is configured in Lua, which is how Haze hands it the blur.
 
 ## License
 

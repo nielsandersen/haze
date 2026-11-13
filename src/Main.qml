@@ -154,6 +154,13 @@ ApplicationWindow {
                 text: qsTr("Haze needs Hyprland, and can't find it running.")
             }
 
+            Note {
+                objectName: "notScriptable"
+                visible: hyprland.available && !hyprland.scriptable
+                color: theme.colors.red
+                text: qsTr("This Hyprland doesn't take Haze's blur, so the haze only dims. Haze needs a Hyprland that is configured in Lua.")
+            }
+
             SectionTitle { text: qsTr("Dim") }
 
             Setting {
@@ -277,6 +284,26 @@ ApplicationWindow {
                         slider.onMoved: backend.grain = slider.value
                     }
                 }
+            }
+
+            SectionTitle { text: qsTr("Startup") }
+
+            Toggle {
+                name: qsTr("Start at login")
+                control.objectName: "startAtLogin"
+                control.checked: backend.startAtLogin
+                control.onToggled: {
+                    backend.startAtLogin = control.checked
+                    // A setting that couldn't be saved shows as it really is.
+                    control.checked = Qt.binding(() => backend.startAtLogin)
+                }
+            }
+
+            Note {
+                objectName: "startAtLoginFailed"
+                visible: backend.startAtLoginFailed
+                color: theme.colors.red
+                text: qsTr("Haze couldn't save that: its autostart file can't be written.")
             }
 
             Note {

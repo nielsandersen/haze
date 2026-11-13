@@ -283,6 +283,38 @@ private slots:
         QCOMPARE(backend.dim(), .25);
     }
 
+    void startAtLoginIsAnAutostartEntry() {
+        QTemporaryDir dir;
+        const QString entry = dir.filePath("autostart/haze.desktop");
+        Backend backend(nullptr, dir.filePath("settings.json"));
+        QVERIFY(!backend.startAtLogin());
+
+        backend.setStartAtLogin(true);
+        QVERIFY(backend.startAtLogin());
+        QVERIFY(!backend.startAtLoginFailed());
+        QFile file(entry);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        // Without a window, and as the haze was left.
+        QVERIFY(file.readAll().contains("\nExec=haze start\n"));
+
+        // Another Haze sees the same.
+        QVERIFY(Backend(nullptr, dir.filePath("settings.json")).startAtLogin());
+
+        backend.setStartAtLogin(false);
+        QVERIFY(!backend.startAtLogin());
+        QVERIFY(!QFileInfo::exists(entry));
+    }
+
+    void startAtLoginSaysWhenItCantBeSaved() {
+        // A file where the autostart folder should be.
+        QTemporaryDir dir;
+        QVERIFY(write(dir.filePath("autostart"), "in the way"));
+        Backend backend(nullptr, dir.filePath("settings.json"));
+        backend.setStartAtLogin(true);
+        QVERIFY(!backend.startAtLogin());
+        QVERIFY(backend.startAtLoginFailed());
+    }
+
     void tintsCycle() {
         QTemporaryDir dir;
         Backend backend(nullptr, dir.filePath("settings.json"));
@@ -373,6 +405,20 @@ private slots:
         fake.announce("configreloaded>>");
         QTRY_COMPARE(hyprland.borderSize(), 1);
         QCOMPARE(reloaded.count(), 1);
+    }
+
+    void anOlderHyprlandIsToldApart() {
+        FakeHyprland fake;
+        fake.replies.insert("/eval haze_asked = true", "unknown request");
+        Hyprland hyprland(fake.requestSocket(), fake.eventSocket());
+        QVERIFY(hyprland.scriptable());
+        QTRY_VERIFY(!hyprland.scriptable());
+
+        FakeHyprland lua;
+        Hyprland current(lua.requestSocket(), lua.eventSocket());
+        QTRY_VERIFY(lua.count("/eval haze_asked = true") >= 1);
+        QTest::qWait(50);
+        QVERIFY(current.scriptable());
     }
 
     void withoutHyprlandNothingIsAsked() {
@@ -922,6 +968,17 @@ private slots:
         QCOMPARE(window->findChild<QObject *>("strength")->property("value").toInt(), 6);
         QTest::keyClick(window, Qt::Key_Minus);
         QCOMPARE(backend.strength(), 5);
+
+        // Starting at login is a switch, and it is off until asked for.
+        auto *login = window->findChild<QQuickItem *>("startAtLogin");
+        QVERIFY(!login->property("checked").toBool());
+        backend.setStartAtLogin(true);
+        QVERIFY(login->property("checked").toBool());
+        QVERIFY(QFileInfo::exists(dir.filePath("autostart/haze.desktop")));
+        backend.setStartAtLogin(false);
+        QVERIFY(!login->property("checked").toBool());
+        QVERIFY(!window->findChild<QObject *>("startAtLoginFailed")->property("visible").toBool());
+        QVERIFY(!window->findChild<QObject *>("notScriptable")->property("visible").toBool());
 
         // What is wrong is said: there is no Hyprland here.
         QVERIFY(window->findChild<QObject *>("noHyprland")->property("visible").toBool());

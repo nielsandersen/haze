@@ -18,6 +18,7 @@ class Hyprland : public QObject {
     Q_PROPERTY(QVariantMap holes READ holes NOTIFY changed)
     Q_PROPERTY(QVariantMap reserved READ reserved NOTIFY changed)
     Q_PROPERTY(int borderSize READ borderSize NOTIFY changed)
+    Q_PROPERTY(bool scriptable READ scriptable NOTIFY changed)
 
 public:
     // Without arguments it finds the running Hyprland's sockets. Tests pass
@@ -28,6 +29,9 @@ public:
     bool available() const { return !m_requests.isEmpty(); }
     bool hasActiveWindow() const { return m_window.isValid(); }
     int borderSize() const { return m_borderSize; }
+    // Whether this Hyprland takes Lua, which is how Haze gives it the blur
+    // rule. One configured the older way answers that it doesn't know how.
+    bool scriptable() const { return m_scriptable; }
 
     // For each monitor showing the focused window, by name: the window's
     // rectangle measured from the corner of that monitor's usable area, which
@@ -85,4 +89,5 @@ private:
     QRectF m_window;
     int m_windowMonitor = -1;
     int m_borderSize = 0;
+    bool m_scriptable = true;
 };
