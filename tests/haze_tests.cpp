@@ -414,7 +414,17 @@ private slots:
         QTest::qWait(300);
         QCOMPARE(hyprland.holes().value("DP-1").toRectF(), QRectF(0, 0, 400, 300));
         hyprland.setWatching(true);
-        QTRY_COMPARE(hyprland.holes().value("DP-1").toRectF(), QRectF(50, 60, 400, 300));
+        // On the move, the hole also covers where the window is heading:
+        // as far again as it just went.
+        QTRY_VERIFY(hyprland.moving());
+        QCOMPARE(hyprland.holes().value("DP-1").toRectF(), QRectF(50, 60, 450, 360));
+        // And while it moves it is looked at far more often.
+        const int before = fake.count("j/activewindow");
+        QTest::qWait(150);
+        QVERIFY(fake.count("j/activewindow") - before > 5);
+        // At rest again, the hole is the window.
+        QTRY_VERIFY(!hyprland.moving());
+        QCOMPARE(hyprland.holes().value("DP-1").toRectF(), QRectF(50, 60, 400, 300));
 
         hyprland.setWatching(false);
         const int asked = fake.count("j/activewindow");

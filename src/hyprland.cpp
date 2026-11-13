@@ -1,10 +1,15 @@
 #include "hyprland.h"
 
 #include <QJsonArray>
+#include <algorithm>
 #include <QJsonDocument>
 #include <QJsonObject>
 
 namespace {
+
+// How often a watched window is looked at: at rest, and on the move.
+const int restingInterval = 120;
+const int movingInterval = 6;
 
 QString runtimeSocket(const char *name) {
     const QString signature = qEnvironmentVariable("HYPRLAND_INSTANCE_SIGNATURE");
@@ -55,8 +60,17 @@ Hyprland::Hyprland(const QString &requests, const QString &events, QObject *pare
         m_events.connectToServer(eventSocket, QIODevice::ReadOnly);
     });
 
-    m_poll.setInterval(120);
+    m_poll.setInterval(restingInterval);
     connect(&m_poll, &QTimer::timeout, this, &Hyprland::refresh);
+    // Still for a moment, the window has come to rest.
+    m_settle.setSingleShot(true);
+    m_settle.setInterval(250);
+    connect(&m_settle, &QTimer::timeout, this, [this] {
+        m_moving = false;
+        if (m_poll.isActive())
+            m_poll.start(restingInterval);
+        emit changed();
+    });
 
     if (!available())
         return;
@@ -127,7 +141,7 @@ void Hyprland::setWatching(bool watching) {
     if (watching == m_poll.isActive())
         return;
     if (watching && available())
-        m_poll.start();
+        m_poll.start(m_moving ? movingInterval : restingInterval);
     else
         m_poll.stop();
 }
@@ -159,14 +173,32 @@ void Hyprland::applyWindow(const QByteArray &reply) {
         && !window.value("hidden").toBool(false))
         rect = QRectF(at[0].toDouble(), at[1].toDouble(), size[0].toDouble(), size[1].toDouble());
     const int monitor = rect.isValid() ? window.value("monitor").toInt(-1) : -1;
+    const QString address = window.value("address").toString();
     QStringList tags;
     for (const QJsonValue &tag : window.value("tags").toArray())
         tags << tag.toString();
-    if (rect == m_window && monitor == m_windowMonitor && tags == m_windowTags)
+    if (rect == m_window && monitor == m_windowMonitor && tags == m_windowTags && address == m_windowAddress)
         return;
+
+    // The same window somewhere else is a window on the move: a drag or a
+    // resize with the mouse, which Hyprland announces nothing about. Until it
+    // rests it is looked at every few milliseconds rather than a few times a
+    // second, so the hole keeps up with it.
+    const bool moved = rect.isValid() && m_window.isValid() && address == m_windowAddress && rect != m_window;
+    if (moved) {
+        m_windowBefore = m_window;
+        m_moving = true;
+        m_settle.start();
+        if (m_poll.isActive())
+            m_poll.start(movingInterval);
+    } else {
+        m_moving = false;
+        m_settle.stop();
+    }
     m_window = rect;
     m_windowMonitor = monitor;
     m_windowTags = tags;
+    m_windowAddress = address;
     emit changed();
 }
 
@@ -206,6 +238,21 @@ QRectF Hyprland::framedWindow() const {
                         || m_windowTags.contains(m_titlebarTag + "*");
     if (window.isValid() && m_titlebars && m_titlebarHeight > 0 && tagged)
         window.setTop(window.top() - m_titlebarHeight);
+
+    // The haze reaches the screen a frame or two after the window was looked
+    // at, and a window on the move is further along by then. So the hole
+    // also covers where the window is heading, each edge as far again as it
+    // just went: a little sharp background behind a moving window is better
+    // than haze over its leading edge.
+    if (window.isValid() && m_moving && m_windowBefore.isValid()) {
+        auto ahead = [](double now, double before) { return now + std::clamp(now - before, -160., 160.); };
+        QRectF next;
+        next.setLeft(ahead(m_window.left(), m_windowBefore.left()));
+        next.setTop(ahead(m_window.top(), m_windowBefore.top()));
+        next.setRight(ahead(m_window.right(), m_windowBefore.right()));
+        next.setBottom(ahead(m_window.bottom(), m_windowBefore.bottom()));
+        window = window.united(next.normalized());
+    }
     return window;
 }
 

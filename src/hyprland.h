@@ -19,6 +19,7 @@ class Hyprland : public QObject {
     Q_PROPERTY(QVariantMap reserved READ reserved NOTIFY changed)
     Q_PROPERTY(int borderSize READ borderSize NOTIFY changed)
     Q_PROPERTY(bool scriptable READ scriptable NOTIFY changed)
+    Q_PROPERTY(bool moving READ moving NOTIFY changed)
 
 public:
     // Without arguments it finds the running Hyprland's sockets. Tests pass
@@ -32,6 +33,9 @@ public:
     // Whether this Hyprland takes Lua, which is how Haze gives it the blur
     // rule. One configured the older way answers that it doesn't know how.
     bool scriptable() const { return m_scriptable; }
+    // The focused window is being moved or resized right now, as far as can
+    // be told: it was somewhere else a moment ago.
+    bool moving() const { return m_moving; }
 
     // For each monitor showing the focused window, by name: the window's
     // rectangle measured from the corner of that monitor's usable area, which
@@ -89,6 +93,12 @@ private:
     QList<Monitor> m_monitors;
     QRectF m_window;
     QStringList m_windowTags;
+    QString m_windowAddress;
+    // While it moves: where it was one look ago, to guess where it will be
+    // by the time the haze is drawn.
+    QRectF m_windowBefore;
+    bool m_moving = false;
+    QTimer m_settle;
     // Title bars from the hyprbars plugin, which Omarchy puts on the windows
     // of a floating workspace: how tall, and the tag a window must carry to
     // get one (none means every window does).

@@ -47,7 +47,8 @@ Item {
     function place() {
         const next = hole
         const has = next !== undefined
-        glide = has && wasHoled
+        // A window being dragged is followed at once; a glide would trail it.
+        glide = has && wasHoled && !hyprland.moving
         if (has) {
             holeX = next.x - grow
             holeY = next.y - grow
