@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Haze
+Comment=Blur and dim everything but the window you are working in
+Comment[da]=Slør og dæmp alt andet end det vindue, du arbejder i
+Exec=haze
+Icon=haze
+Terminal=false
+Categories=Utility;
+StartupWMClass=haze

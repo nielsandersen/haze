@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="Main.qml">Main.qml</file>
+        <file alias="Overlay.qml">Overlay.qml</file>
+        <file alias="Tray.qml">Tray.qml</file>
+        <file alias="haze.svg">../share/haze.svg</file>
+        <file alias="haze-symbolic.svg">../share/haze-symbolic.svg</file>
+        <file alias="haze-off-symbolic.svg">../share/haze-off-symbolic.svg</file>
+        <file alias="i18n/en.json">i18n/en.json</file>
+        <file alias="i18n/da.json">i18n/da.json</file>
+    </qresource>
+</RCC>
