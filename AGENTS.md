@@ -23,9 +23,9 @@ Hyprland configured in Lua.
 | Path | What it holds |
 | --- | --- |
 | `src/main.cpp` | Command line (`haze on`, `off`, `toggle`, ...) and the version string |
-| `src/backend.*` | Settings: whether the haze is on and how it looks; saved to `~/.config/haze/settings.json` |
+| `src/backend.*` | Settings: whether the haze is on and how it looks, saved to `~/.config/haze/settings.json`; also sends Hyprland the blur and gives it back |
 | `src/control.*` | Single instance: a second `haze` hands its command to the running one |
-| `src/hyprland.*` | What Haze reads from Hyprland (focused window, screens) and the blur it asks for |
+| `src/hyprland.*` | What Haze reads from Hyprland, kept current, such as where the focused window is |
 | `src/overlays.*` | The haze surfaces: one layer per screen above the windows, one under the bar |
 | `src/theme.*` | Follows the Omarchy theme live |
 | `src/translator.*`, `src/i18n/` | Follows Omarchy's language; one JSON catalog per language |
@@ -43,7 +43,8 @@ A new file in `src/` needs no CMake change; the sources are globbed.
   run time and gives the desktop its settings back when turned off or quit.
 - Every string shown to a person goes through the translator. Add it to both
   `src/i18n/en.json` and `src/i18n/da.json`.
-- Colours come from the Omarchy theme, never from literals.
+- Interface colours come from the Omarchy theme. The only literals are the
+  haze's own black and white tints.
 - Keep `README.md` current when a key, command or behaviour changes.
 
 ## Releasing
