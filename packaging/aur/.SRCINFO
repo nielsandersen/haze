@@ -1,0 +1,25 @@
+pkgbase = hyprhaze
+	pkgdesc = Blur and dim everything but the window you are working in, on Hyprland
+	pkgver = 0.1.1
+	pkgrel = 1
+	url = https://github.com/nielsandersen/haze
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	checkdepends = ttf-dejavu
+	makedepends = cmake
+	makedepends = gcc
+	makedepends = make
+	depends = hicolor-icon-theme
+	depends = hyprland
+	depends = layer-shell-qt
+	depends = qt6-base
+	depends = qt6-declarative
+	depends = qt6-svg
+	depends = qt6-wayland
+	conflicts = haze
+	options = !debug
+	source = haze-0.1.1.tar.gz::https://github.com/nielsandersen/haze/archive/refs/tags/v0.1.1.tar.gz
+	sha256sums = 55588d2a6881f03e660f7f182c2f6d1b84d2eb231d746be535dd6ea31403af14
+
+pkgname = hyprhaze

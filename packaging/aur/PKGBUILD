@@ -1,0 +1,31 @@
+# Maintainer: Niels Andersen
+pkgname=hyprhaze
+pkgver=0.1.1
+pkgrel=1
+pkgdesc='Blur and dim everything but the window you are working in, on Hyprland'
+arch=('x86_64' 'aarch64')
+url='https://github.com/nielsandersen/haze'
+license=('MIT')
+options=('!debug')
+depends=('hicolor-icon-theme' 'hyprland' 'layer-shell-qt' 'qt6-base' 'qt6-declarative' 'qt6-svg' 'qt6-wayland')
+makedepends=('cmake' 'gcc' 'make')
+checkdepends=('ttf-dejavu')
+# Both install /usr/bin/haze.
+conflicts=('haze')
+source=("haze-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('55588d2a6881f03e660f7f182c2f6d1b84d2eb231d746be535dd6ea31403af14')
+
+build() {
+  cd "$srcdir/haze-$pkgver"
+  ./bin/build
+}
+
+check() {
+  cd "$srcdir/haze-$pkgver"
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  cd "$srcdir/haze-$pkgver"
+  DESTDIR="$pkgdir" cmake --install build --prefix /usr
+}
